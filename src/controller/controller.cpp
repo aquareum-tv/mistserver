@@ -600,7 +600,7 @@ int main_loop(int argc, char **argv){
 
 ///\brief The controller angel process.
 /// Starts a forked main_loop in a loop. Yes, you read that right.
-int main(int argc, char **argv){
+int ControllerMain(int argc, char **argv){
   Util::Procs::setHandler(); // set child handler
   {
     struct sigaction new_action;
@@ -663,3 +663,8 @@ int main(int argc, char **argv){
   return 0;
 }
 
+#ifndef ONE_BINARY
+int main(int argc, char **argv){
+  return ControllerMain(argc, argv);
+}
+#endif

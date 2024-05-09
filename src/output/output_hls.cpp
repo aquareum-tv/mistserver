@@ -179,7 +179,7 @@ namespace Mist{
 
   bool OutHLS::listenMode(){return !(config->getString("ip").size());}
 
-  OutHLS::OutHLS(Socket::Connection &conn) : TSOutput(conn){
+  OutHLS::OutHLS(Socket::Connection &conn) : TSOutputHTTP(conn){
     uaDelay = 0;
     realTime = 0;
     until = 0xFFFFFFFFFFFFFFFFull;
@@ -493,7 +493,7 @@ namespace Mist{
       return;
     }
     // Invoke the generic TS output sendNext handler
-    TSOutput::sendNext();
+    TSOutputHTTP::sendNext();
   }
 
   void OutHLS::sendTS(const char *tsData, size_t len){H.Chunkify(tsData, len, myConn);}

@@ -61,4 +61,8 @@ namespace Mist{
   };
 }// namespace Mist
 
+#ifndef ONE_BINARY
+#ifndef ONE_BINARY
 typedef Mist::InputBuffer mistIn;
+#endif
+#endif

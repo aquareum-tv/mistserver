@@ -17,8 +17,6 @@
 #include <iostream>
 #include <unistd.h>
 
-#define MAX_ARGS 256
-
 ///\brief Holds everything unique to the controller.
 namespace Controller{
 
@@ -29,7 +27,7 @@ namespace Controller{
 
   /// Updates the shared memory page with active connectors
   void saveActiveConnectors(bool forceOverride){
-    IPC::sharedPage f("MstCnns", 4096000, forceOverride, false);
+    IPC::sharedPage f("MstCnns", 4096, forceOverride, false);
     if (!f.mapped){
       if (!forceOverride){
         saveActiveConnectors(true);
@@ -43,7 +41,7 @@ namespace Controller{
     memset(f.mapped, 0, 32);
     Util::RelAccX A(f.mapped, false);
     if (!A.isReady()){
-      A.addField("cmd", RAX_STRING, 10240);
+      A.addField("cmd", RAX_128STRING);
       A.addField("pid", RAX_64UINT);
       A.setReady();
     }
@@ -60,7 +58,7 @@ namespace Controller{
 
   /// Reads active connectors from the shared memory pages
   void loadActiveConnectors(){
-    IPC::sharedPage f("MstCnns", 4096000, false, false);
+    IPC::sharedPage f("MstCnns", 4096, false, false);
     const Util::RelAccX A(f.mapped, false);
     if (A.isReady()){
       INFO_MSG("Reloading existing connectors to complete rolling restart");
@@ -78,7 +76,7 @@ namespace Controller{
   /// Deletes the shared memory page with connector information
   /// in preparation of shutdown.
   void prepareActiveConnectorsForShutdown(){
-    IPC::sharedPage f("MstCnns", 4096000, false, false);
+    IPC::sharedPage f("MstCnns", 4096, false, false);
     if (f){f.master = true;}
   }
 
@@ -93,12 +91,12 @@ namespace Controller{
     currentConnectors.clear();
   }
 
-  static inline void builPipedPart(JSON::Value &p, char *argarr[], int &argnum, const JSON::Value &argset){
+  static inline void buildPipedPart(JSON::Value &p, std::deque<std::string> &argDeq, const JSON::Value &argset){
     jsonForEachConst(argset, it){
       if (it->isMember("option") && p.isMember(it.key())){
         if (!it->isMember("type")){
           if (JSON::Value(p[it.key()]).asBool()){
-            argarr[argnum++] = (char *)((*it)["option"].c_str());
+            argDeq.push_back((*it)["option"]);
           }
           continue;
         }
@@ -111,39 +109,34 @@ namespace Controller{
         }
         if ((*it)["type"].asStringRef() == "inputlist" && p[it.key()].isArray()){
           jsonForEach(p[it.key()], iVal){
-            (*iVal) = iVal->asString();
-            argarr[argnum++] = (char *)((*it)["option"].c_str());
-            argarr[argnum++] = (char *)((*iVal).c_str());
+            argDeq.push_back((*it)["option"]);
+            argDeq.push_back(iVal->asString());
           }
           continue;
         }
         if (p[it.key()].asStringRef().size() > 0){
-          argarr[argnum++] = (char *)((*it)["option"].c_str());
-          argarr[argnum++] = (char *)(p[it.key()].c_str());
+          argDeq.push_back((*it)["option"]);
+          argDeq.push_back(p[it.key()].asString());
         }else{
-          argarr[argnum++] = (char *)((*it)["option"].c_str());
+          argDeq.push_back((*it)["option"]);
         }
       }
     }
   }
 
-  static inline void buildPipedArguments(JSON::Value &p, char *argarr[], const JSON::Value &capabilities){
-    int argnum = 0;
+  static inline void buildPipedArguments(JSON::Value &p, std::deque<std::string> &argDeq, const JSON::Value &capabilities){
     static std::string tmparg;
-    tmparg = Util::getMyPath() + std::string("MistOut") + p["connector"].asStringRef();
-    struct stat buf;
-    if (::stat(tmparg.c_str(), &buf) != 0){
-      tmparg = Util::getMyPath() + std::string("MistConn") + p["connector"].asStringRef();
+    tmparg = std::string("MistOut") + p["connector"].asStringRef();
+    if (!Util::Procs::HasMistBinary(tmparg)){
+      tmparg = std::string("MistConn") + p["connector"].asStringRef();
+      if (!Util::Procs::HasMistBinary(tmparg)) {
+        return;
+      }
     }
-    // Also check for & allow exact matches for livepeer-x binaries
-    if (::stat(tmparg.c_str(), &buf) != 0){
-      tmparg = Util::getMyPath() + p["connector"].asStringRef();
-    }
-    if (::stat(tmparg.c_str(), &buf) != 0){return;}
-    argarr[argnum++] = (char *)tmparg.c_str();
+    argDeq.push_back(tmparg);
     const JSON::Value &pipedCapa = capabilities["connectors"][p["connector"].asStringRef()];
-    if (pipedCapa.isMember("required")){builPipedPart(p, argarr, argnum, pipedCapa["required"]);}
-    if (pipedCapa.isMember("optional")){builPipedPart(p, argarr, argnum, pipedCapa["optional"]);}
+    if (pipedCapa.isMember("required")){buildPipedPart(p, argDeq, pipedCapa["required"]);}
+    if (pipedCapa.isMember("optional")){buildPipedPart(p, argDeq, pipedCapa["optional"]);}
   }
 
   ///\brief Checks current protocol configuration, updates state of enabled connectors if
@@ -166,8 +159,6 @@ namespace Controller{
 
     // used for building args
     int err = fileno(stderr);
-    char *argarr[MAX_ARGS]; // approx max # of args (with a wide margin)
-    int i;
 
     std::string tmp;
 
@@ -255,25 +246,17 @@ namespace Controller{
     }
 
     // start up new/changed connectors
-    static std::string livepeerPrefix = std::string(Util::getMyPath() + "livepeer");
     while (runningConns.size() && conf.is_active){
       if (!currentConnectors.count(*runningConns.begin()) ||
           !Util::Procs::isActive(currentConnectors[*runningConns.begin()])){
         Log("CONF", "Starting connector: " + *runningConns.begin());
         action = true;
-        // clear out old args
-        for (i = 0; i < MAX_ARGS; i++){argarr[i] = 0;}
+        std::deque<std::string> argDeq;
         // get args for this connector
         JSON::Value p = JSON::fromString(*runningConns.begin());
-        buildPipedArguments(p, (char **)&argarr, capabilities);
+        buildPipedArguments(p, argDeq, capabilities);
         // start piped w/ generated args
-        // for livepeer-x binaries, pass stdout/stderr straight through the logger
-        if (strncmp(argarr[0], livepeerPrefix.c_str(), strlen(livepeerPrefix.c_str())) == 0) {
-          int my_stdout = 1;
-          currentConnectors[*runningConns.begin()] = Util::Procs::StartPiped(argarr, 0, &my_stdout, &my_stdout);
-        }else{
-          currentConnectors[*runningConns.begin()] = Util::Procs::StartPiped(argarr, 0, 0, &err);
-        }
+        currentConnectors[*runningConns.begin()] = Util::Procs::StartPipedMist(argDeq, 0, 0, &err);
         Triggers::doTrigger("OUTPUT_START", *runningConns.begin()); // LTS
       }
       runningConns.erase(runningConns.begin());

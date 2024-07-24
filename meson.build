@@ -307,9 +307,7 @@ onebinary_header = custom_target('onebinary',
   depends: [onebinary_tgts]
 )
 
-onebinary = executable(
-  'MistServer',
-  [
+onebinary_sources = [
     files(
       'src/controller/controller_external_writers.cpp',
       'src/controller/controller_updater.cpp',
@@ -332,13 +330,39 @@ onebinary = executable(
     embed_tgts,
     server_html,
     onebinary_header,
-  ],
+]
+
+onebinary = executable(
+  'MistServer',
+  onebinary_sources,
   cpp_args: [
     '-DTS_BASECLASS=Output',
     '-DONE_BINARY=1',
   ],
   dependencies : [libmist_dep],
   install: true,
+)
+
+onelibrary = static_library(
+  'mistserver',
+  onebinary_sources,
+  cpp_args: [
+    '-DTS_BASECLASS=Output',
+    '-DONE_BINARY=1',
+    '-DONE_LIBRARY=1',
+  ],
+  link_with: [
+    libmist
+  ],
+  dependencies: mist_deps,
+  install: true,
+  include_directories: incroot
+)
+
+libmistserver_dep = declare_dependency(
+  link_with: [onelibrary],
+  dependencies: mist_deps,
+  include_directories: incroot
 )
 
 # Docs

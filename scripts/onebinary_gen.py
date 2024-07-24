@@ -89,7 +89,8 @@ Path(out_fullpath).write_text('\n'.join(cap_lines))
 entrypoint_lines = []
 
 for header_file in header_files:
-  entrypoint_lines.append('#include "' + header_file + '"')
+  real = os.path.realpath(header_file)
+  entrypoint_lines.append('#include "' + real + '"')
 
 entrypoint_lines.extend([
   '#include <mist/config.h>',
@@ -109,7 +110,11 @@ entrypoint_lines.extend([
   # '#include "src/input/mist_in.cpp"',
   # '#include "src/session.cpp"',
   # '#include "src/controller/controller.cpp"',
+  '#ifdef ONE_LIBRARY',
+  'extern "C" { int MistServerMain(int argc, char *argv[]){',
+  '#else',
   'int main(int argc, char *argv[]){',
+  '#endif',
   '  if (argc < 2) {',
   '    program_invocation_short_name = (char *)"MistController";'
   '    return ControllerMain(argc, argv);',
@@ -146,6 +151,9 @@ entrypoint_lines.extend([
   '  INFO_MSG("binary not found: %s", argv[1]);',
   '  return 202;',
   '}',
+  '#ifdef ONE_LIBRARY',
+  '}',
+  '#endif'
 ])
 
 entrypoint_fullpath = os.path.join(os.getcwd(), args.entrypoint)

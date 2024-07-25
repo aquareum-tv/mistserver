@@ -53,7 +53,7 @@ option_defines = [
 if not get_option('NOSHM') and host_machine.system() != 'darwin'
   option_defines += '-DSHM_ENABLED=1'
 else
-  message('Shared memory use is turned OFF')
+  message('Shared memory use is turned OFF')[0]
 endif
 
 usessl = true
@@ -280,12 +280,17 @@ foreach exec : executables
   )
   exec_tgts += my_exec
   gen_src_name = exec.get('name') + '.json'
-  gen_src = custom_target(gen_src_name,
-    input: [my_exec],
-    output: [exec.get('name') + '.json'],
-    command: [make_header, '@INPUT@', '@OUTPUT0@']
-  )
   if onebinary_stuff.contains(exec.get('name'))
+    env = {}
+    if meson.is_cross_build()
+      env = {'MESON_EXE_WRAPPER': meson.get_external_property('exe_wrapper')}
+    endif
+    gen_src = custom_target(gen_src_name,
+      input: [my_exec],
+      output: [exec.get('name') + '.json'],
+      command: [make_header, '@INPUT@', '@OUTPUT0@'],
+      env: env
+    )
     onebinary_tgts += gen_src
     onebinary_headers += exec.get('headers')
     onebinary_sources += exec.get('sources_debased')

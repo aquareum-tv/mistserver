@@ -3,7 +3,7 @@
 set -euo pipefail
 
 set +e
-if [[ "${MESON_EXE_WRAPPER}" != "" ]]; then
+if [[ "${MESON_EXE_WRAPPER:-}" != "" ]]; then
   json="$($MESON_EXE_WRAPPER ./$1 -j)"
   status=$?
 else

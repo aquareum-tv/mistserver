@@ -13,6 +13,9 @@
 /// Contains utility code, not directly related to streaming media
 namespace Util{
 
+  /// Gets path to the current executable
+  std::string getMyself();
+
   /// Gets directory the current executable is stored in.
   std::string getMyPath();
 

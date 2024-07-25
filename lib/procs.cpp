@@ -359,7 +359,7 @@ pid_t Util::Procs::StartPiped(std::deque<std::string> &argDeq, int *fdin, int *f
 // Modify deque with a rewritten first element to reflect the correct path
 void mistifyDeque(std::deque<std::string> &argDeq) {
 #ifdef ONE_BINARY
-  argDeq.push_front(Util::getMyPath() + "MistServer");
+  argDeq.push_front(Util::getMyself());
 #else
   argDeq[0] = Util::getMyPath() + argDeq[0];
 #endif
@@ -595,8 +595,8 @@ void Util::Procs::remember(pid_t pid){
   plist.insert(pid);
 }
 
-/// Gets directory the current executable is stored in.
-std::string Util::getMyPath(){
+/// Gets path of my current executable
+std::string Util::getMyself(){
   char mypath[500];
 #ifdef __CYGWIN__
   GetModuleFileName(0, mypath, 500);
@@ -615,6 +615,12 @@ std::string Util::getMyPath(){
 #endif
 #endif
   std::string tPath = mypath;
+  return tPath;
+}
+
+/// Gets directory the current executable is stored in.
+std::string Util::getMyPath(){
+  std::string tPath = Util::getMyself();
   size_t slash = tPath.rfind('/');
   if (slash == std::string::npos){
     slash = tPath.rfind('\\');

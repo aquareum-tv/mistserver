@@ -72,7 +72,7 @@ endif
 
 install_headers(headers, subdir: 'mist')
 
-libmist = library('mist',
+libmist_src = files(
   'adts.cpp',
   'amf.cpp',
   'auth.cpp',
@@ -127,6 +127,9 @@ libmist = library('mist',
   'flac.cpp',
   'ptvtmp.cpp',
   extra_code,
+)
+libmist = library('mist',
+  libmist_src,
   include_directories: incroot,
   dependencies: mist_deps,
   install: true,

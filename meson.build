@@ -351,13 +351,11 @@ onebinary = executable(
 onelibrary = static_library(
   'mistserver',
   onebinary_sources,
+  libmist_src,
   cpp_args: [
     '-DTS_BASECLASS=Output',
     '-DONE_BINARY=1',
     '-DONE_LIBRARY=1',
-  ],
-  link_with: [
-    libmist
   ],
   dependencies: mist_deps,
   install: true,

@@ -356,9 +356,13 @@ pid_t Util::Procs::StartPiped(std::deque<std::string> &argDeq, int *fdin, int *f
   return ret;
 }
 
-// Create a new deque with a rewritten first element to reflect the correct path
+// Modify deque with a rewritten first element to reflect the correct path
 void mistifyDeque(std::deque<std::string> &argDeq) {
+#ifdef ONE_BINARY
+  argDeq.push_front(Util::getMyPath() + "MistServer");
+#else
   argDeq[0] = Util::getMyPath() + argDeq[0];
+#endif
 }
 
 // Start one of our Mist* processes, resolving our path automatically and such.
@@ -376,9 +380,13 @@ int Util::Procs::ExecMist(std::deque<std::string> &argDeq){
 
 // Check whether a given Mist* binary is available for us to run
 bool Util::Procs::HasMistBinary(std::string binName){
+#ifdef ONE_BINARY
+  return true;
+#else
   std::string tmparg = Util::getMyPath() + binName;
   struct stat buf;
   return ::stat(tmparg.c_str(), &buf) == 0;
+#endif
 }
 
 /// Starts a new process with given fds if the name is not already active.

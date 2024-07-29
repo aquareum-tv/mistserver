@@ -91,39 +91,6 @@ namespace Controller{
     currentConnectors.clear();
   }
 
-  static inline void buildPipedPart(JSON::Value &p, std::deque<std::string> &argDeq, const JSON::Value &argset){
-    jsonForEachConst(argset, it){
-      if (it->isMember("option") && p.isMember(it.key())){
-        if (!it->isMember("type")){
-          if (JSON::Value(p[it.key()]).asBool()){
-            argDeq.push_back((*it)["option"]);
-          }
-          continue;
-        }
-        if ((*it)["type"].asStringRef() == "str" && !p[it.key()].isString()){
-          p[it.key()] = p[it.key()].asString();
-        }
-        if ((*it)["type"].asStringRef() == "uint" || (*it)["type"].asStringRef() == "int" ||
-            (*it)["type"].asStringRef() == "debug"){
-          p[it.key()] = JSON::Value(p[it.key()].asInt()).asString();
-        }
-        if ((*it)["type"].asStringRef() == "inputlist" && p[it.key()].isArray()){
-          jsonForEach(p[it.key()], iVal){
-            argDeq.push_back((*it)["option"]);
-            argDeq.push_back(iVal->asString());
-          }
-          continue;
-        }
-        if (p[it.key()].asStringRef().size() > 0){
-          argDeq.push_back((*it)["option"]);
-          argDeq.push_back(p[it.key()].asString());
-        }else{
-          argDeq.push_back((*it)["option"]);
-        }
-      }
-    }
-  }
-
   static inline void buildPipedArguments(JSON::Value &p, std::deque<std::string> &argDeq, const JSON::Value &capabilities){
     static std::string tmparg;
     tmparg = std::string("MistOut") + p["connector"].asStringRef();
@@ -135,8 +102,8 @@ namespace Controller{
     }
     argDeq.push_back(tmparg);
     const JSON::Value &pipedCapa = capabilities["connectors"][p["connector"].asStringRef()];
-    if (pipedCapa.isMember("required")){buildPipedPart(p, argDeq, pipedCapa["required"]);}
-    if (pipedCapa.isMember("optional")){buildPipedPart(p, argDeq, pipedCapa["optional"]);}
+    if (pipedCapa.isMember("required")){Util::buildPipedPart(p, argDeq, pipedCapa["required"]);}
+    if (pipedCapa.isMember("optional")){Util::buildPipedPart(p, argDeq, pipedCapa["optional"]);}
   }
 
   ///\brief Checks current protocol configuration, updates state of enabled connectors if

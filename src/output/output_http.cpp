@@ -959,7 +959,6 @@ namespace Mist{
     std::string tmparg = std::string("MistOut") + connector;
     std::string tmpPrequest;
     if (H.url.size()){tmpPrequest = H.BuildRequest();}
-    int argnum = 0;
     std::deque<std::string> argDeq;
     argDeq.push_back(tmparg);
     std::string debuglevel = JSON::Value(Util::printDebugLevel).asString();

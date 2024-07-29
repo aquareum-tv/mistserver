@@ -5,6 +5,7 @@
 #include <mist/stream.h>
 #include <mist/util.h>
 #include <mist/url.h>
+#include <mist/config.h>
 #include <set>
 #include <sstream>
 #include <sys/stat.h>
@@ -896,47 +897,12 @@ namespace Mist{
     }
   }
 
-  static inline void builPipedPart(JSON::Value &p, char *argarr[], int &argnum, const JSON::Value &argset){
-    jsonForEachConst(argset, it){
-      if (it->isMember("option") && p.isMember(it.key())){
-        if (!it->isMember("type")){
-          if (JSON::Value(p[it.key()]).asBool()){
-            argarr[argnum++] = (char *)((*it)["option"].c_str());
-          }
-          continue;
-        }
-        if ((*it)["type"].asStringRef() == "inputlist" && p[it.key()].isArray()){
-          jsonForEach(p[it.key()], iVal){
-            (*iVal) = iVal->asString();
-            argarr[argnum++] = (char *)((*it)["option"].c_str());
-            argarr[argnum++] = (char *)((*iVal).c_str());
-          }
-          continue;
-        }
-        if ((*it)["type"].asStringRef() == "uint" || (*it)["type"].asStringRef() == "int" ||
-            (*it)["type"].asStringRef() == "debug"){
-          p[it.key()] = JSON::Value(p[it.key()].asInt()).asString();
-        }else{
-          p[it.key()] = p[it.key()].asString();
-        }
-        if (p[it.key()].asStringRef().size() > 0){
-          argarr[argnum++] = (char *)((*it)["option"].c_str());
-          argarr[argnum++] = (char *)(p[it.key()].c_str());
-        }else{
-          argarr[argnum++] = (char *)((*it)["option"].c_str());
-        }
-      }
-    }
-  }
-
   ///\brief Handles requests by starting a corresponding output process.
   ///\param connector The type of connector to be invoked.
   void HTTPOutput::reConnector(std::string &connector){
     // Clear tkn in order to deal with reverse proxies
     tkn = "";
     // taken from CheckProtocols (controller_connectors.cpp)
-    char *argarr[32];
-    for (int i = 0; i < 32; i++){argarr[i] = 0;}
     int id = -1;
     JSON::Value pipedCapa;
     JSON::Value p; // properties of protocol
@@ -990,29 +956,30 @@ namespace Mist{
       pipedCapa = capa.getMember(connector).asJSON();
     }
     // build arguments for starting output process
-    std::string tmparg = Util::getMyPath() + std::string("MistOut") + connector;
+    std::string tmparg = std::string("MistOut") + connector;
     std::string tmpPrequest;
     if (H.url.size()){tmpPrequest = H.BuildRequest();}
     int argnum = 0;
-    argarr[argnum++] = (char *)tmparg.c_str();
+    std::deque<std::string> argDeq;
+    argDeq.push_back(tmparg);
     std::string debuglevel = JSON::Value(Util::printDebugLevel).asString();
     std::string trueHostStr = Output::getConnectedHost();
-    argarr[argnum++] = (char *)"--ip";
-    argarr[argnum++] = (char *)(trueHostStr.c_str());
-    argarr[argnum++] = (char *)"--stream";
-    argarr[argnum++] = (char *)(streamName.c_str());
-    argarr[argnum++] = (char *)"--prequest";
-    argarr[argnum++] = (char *)(tmpPrequest.c_str());
+    argDeq.push_back("--ip");
+    argDeq.push_back(trueHostStr);
+    argDeq.push_back("--stream");
+    argDeq.push_back(streamName);
+    argDeq.push_back("--prequest");
+    argDeq.push_back(tmpPrequest);
     // set the debug level if non-default
     if (Util::printDebugLevel != DEBUG){
-      argarr[argnum++] = (char *)"--debug";
-      argarr[argnum++] = (char *)(debuglevel.c_str());
+      argDeq.push_back("--debug");
+      argDeq.push_back(debuglevel);
     }
-    if (pipedCapa.isMember("required")){builPipedPart(p, argarr, argnum, pipedCapa["required"]);}
-    if (pipedCapa.isMember("optional")){builPipedPart(p, argarr, argnum, pipedCapa["optional"]);}
+    if (pipedCapa.isMember("required")){Util::buildPipedPart(p, argDeq, pipedCapa["required"]);}
+    if (pipedCapa.isMember("optional")){Util::buildPipedPart(p, argDeq, pipedCapa["optional"]);}
 
     /// start new/better process
-    execv(argarr[0], argarr);
+    Util::Procs::ExecMist(argDeq);
   }
 
   std::string HTTPOutput::getConnectedHost(){

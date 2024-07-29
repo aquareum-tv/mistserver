@@ -262,7 +262,7 @@ onebinary_stuff += 'MistOutTS'
 # onebinary_stuff += 'MistOutTSRIST'
 # onebinary_stuff += 'MistOutTSSRT'
 onebinary_stuff += 'MistOutWAV'
-# onebinary_stuff += 'MistOutWebRTC'
+onebinary_stuff += 'MistOutWebRTC'
 
 onebinary_tgts = []
 onebinary_headers = []
@@ -332,6 +332,11 @@ onebinary_sources = [
     onebinary_header,
 ]
 
+onebinary_deps = [
+  mist_deps,
+  usrsctp_dep,
+]
+
 onebinary = executable(
   'MistServer',
   onebinary_sources,
@@ -339,7 +344,7 @@ onebinary = executable(
   cpp_args: [
     '-DONE_BINARY=1',
   ],
-  dependencies : mist_deps,
+  dependencies : onebinary_deps,
   install: true,
 )
 
@@ -351,7 +356,7 @@ onelibrary = static_library(
     '-DONE_BINARY=1',
     '-DONE_LIBRARY=1',
   ],
-  dependencies: mist_deps,
+  dependencies: onebinary_deps,
   install: true,
   include_directories: incroot
 )

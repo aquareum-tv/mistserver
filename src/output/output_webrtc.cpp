@@ -22,30 +22,30 @@ namespace Mist{
   bool doDTLS = true;
   bool volkswagenMode = false;
 
-  OutWebRTC *classPointer = 0;
+  OutWebRTC *classPointerWebRTC = 0;
 
   static void webRTCInputOutputThreadFunc(void *arg){
-    classPointer->handleWebRTCInputOutputFromThread();
+    classPointerWebRTC->handleWebRTCInputOutputFromThread();
   }
 
   static void onRTPSorterHasPacketCallback(const uint64_t track, const RTP::Packet &p){
-    classPointer->onRTPSorterHasPacket(track, p);
+    classPointerWebRTC->onRTPSorterHasPacket(track, p);
   }
 
   static void onDTSCConverterHasInitDataCallback(const uint64_t track, const std::string &initData){
-    classPointer->onDTSCConverterHasInitData(track, initData);
+    classPointerWebRTC->onDTSCConverterHasInitData(track, initData);
   }
 
   static void onDTSCConverterHasPacketCallback(const DTSC::Packet &pkt){
-    classPointer->onDTSCConverterHasPacket(pkt);
+    classPointerWebRTC->onDTSCConverterHasPacket(pkt);
   }
 
   static void onRTPPacketizerHasDataCallback(void *socket, const char *data, size_t len, uint8_t channel){
-    classPointer->onRTPPacketizerHasRTPPacket(data, len);
+    classPointerWebRTC->onRTPPacketizerHasRTPPacket(data, len);
   }
 
   static void onRTPPacketizerHasRTCPDataCallback(void *socket, const char *data, size_t len, uint8_t){
-    classPointer->onRTPPacketizerHasRTCPPacket(data, len);
+    classPointerWebRTC->onRTPPacketizerHasRTCPPacket(data, len);
   }
 
 
@@ -233,7 +233,7 @@ namespace Mist{
 
     sdpAnswer.setFingerprint(cert.getFingerprintSha256());
 
-    classPointer = this;
+    classPointerWebRTC = this;
 
     setBlocking(false);
   }

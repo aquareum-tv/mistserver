@@ -861,7 +861,7 @@ pid_t Util::startPush(const std::string &streamname, std::string &target, int de
                      output.getMember("name").asString().c_str(), checkTarget.c_str());
           if (checkTarget.substr(0, front.size()) == front &&
               checkTarget.size() >= back.size() && checkTarget.substr(checkTarget.size() - back.size()) == back){
-            output_bin = Util::getMyPath() + "MistOut" + output.getMember("name").asString();
+            output_bin = "MistOut" + output.getMember("name").asString();
             break;
           }
           //Check for external writer support
@@ -880,7 +880,7 @@ pid_t Util::startPush(const std::string &streamname, std::string &target, int de
                   JSON::Value protocolArray;
                   for (uint8_t idx = 0; idx < protocolCount; idx++){
                     if (tUri.protocol == protocols.getPointer("protocol", idx)){
-                      output_bin = Util::getMyPath() + "MistOut" + output.getMember("name").asString();
+                      output_bin = "MistOut" + output.getMember("name").asString();
                       break;
                     }
                     if (output_bin.size()){break;}
@@ -902,15 +902,18 @@ pid_t Util::startPush(const std::string &streamname, std::string &target, int de
   INFO_MSG("Pushing %s to %s through %s", streamname.c_str(), target.c_str(), output_bin.c_str());
   // Start  output.
   std::string dLvl = JSON::Value(debugLvl).asString();
-  char *argv[] ={(char *)output_bin.c_str(), (char *)"--stream", (char *)streamname.c_str(),
-                  (char *)target.c_str(), 0, 0, 0};
+  std::deque<std::string> argDeq;
+  argDeq.push_back(output_bin);
+  argDeq.push_back("--stream");
+  argDeq.push_back(streamname);
+  argDeq.push_back(target);
   if (debugLvl != DEBUG){
-    argv[4] = (char*)"-g";
-    argv[5] = (char*)dLvl.c_str();
+    argDeq.push_back("-g");
+    argDeq.push_back(dLvl);
   }
   int stdErr = 2;
   // Cache return value so we can do some cleaning before we return
-  pid_t ret = Util::Procs::StartPiped(argv, 0, 0, &stdErr);
+  pid_t ret = Util::Procs::StartPipedMist(argDeq, 0, 0, &stdErr);
   // Clean up environment
   unsetenv("MST_ORIG_TARGET");
   // Actually return the resulting PID

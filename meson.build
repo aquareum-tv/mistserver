@@ -283,7 +283,10 @@ foreach exec : executables
   if onebinary_stuff.contains(exec.get('name'))
     env = {}
     if meson.is_cross_build()
-      env = {'MESON_EXE_WRAPPER': meson.get_external_property('exe_wrapper')}
+      wrapper = meson.get_external_property('exe_wrapper', '')
+      if wrapper != ''
+        env = {'MESON_EXE_WRAPPER': wrapper}
+      endif
     endif
     gen_src = custom_target(gen_src_name,
       input: [my_exec],

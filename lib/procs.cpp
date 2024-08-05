@@ -23,6 +23,9 @@
 #include <stdlib.h>
 #include <sys/types.h>
 #include <dirent.h>
+#if defined(__APPLE__)
+#include <mach-o/dyld.h>
+#endif
 
 std::set<pid_t> Util::Procs::plist;
 std::set<int> Util::Procs::socketList;

@@ -53,7 +53,7 @@ option_defines = [
 if not get_option('NOSHM') and host_machine.system() != 'darwin'
   option_defines += '-DSHM_ENABLED=1'
 else
-  message('Shared memory use is turned OFF')[0]
+  message('Shared memory use is turned OFF')
 endif
 
 usessl = true

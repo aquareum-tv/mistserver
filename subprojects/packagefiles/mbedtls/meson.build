@@ -3,7 +3,15 @@ add_project_arguments(['-Wno-stringop-overflow'], language: 'c')
 
 incl = include_directories('include')
 
-libmbedcrypto = library('mbedcrypto',
+cc = meson.get_compiler('c')
+
+system_libs = []
+if host_machine.system() == 'windows'
+  system_libs += cc.find_library('ws2_32', required: true)
+endif
+
+libmbedcrypto = library(
+  'mbedcrypto',
   'library/aes.c',
   'library/aesni.c',
   'library/arc4.c',
@@ -64,15 +72,17 @@ libmbedcrypto = library('mbedcrypto',
   'library/version.c',
   'library/version_features.c',
   'library/xtea.c',
-  include_directories: incl
+  include_directories: incl,
+  dependencies: system_libs,
 )
 
 mbedcrypto_dep = declare_dependency(
-    link_with: [libmbedcrypto],
-    include_directories: incl,
+  link_with: [libmbedcrypto],
+  include_directories: incl,
 )
 
-libmbedx509 = library('mbedx509',
+libmbedx509 = library(
+  'mbedx509',
   'library/certs.c',
   'library/pkcs11.c',
   'library/x509.c',
@@ -83,15 +93,16 @@ libmbedx509 = library('mbedx509',
   'library/x509write_crt.c',
   'library/x509write_csr.c',
   include_directories: incl,
-  dependencies: mbedcrypto_dep,
+  dependencies: [mbedcrypto_dep, system_libs],
 )
 
 mbedx509_dep = declare_dependency(
-    link_with: [libmbedx509],
-    include_directories: incl,
+  link_with: [libmbedx509],
+  include_directories: incl,
 )
 
-libmbedtls = library('mbedtls',
+libmbedtls = library(
+  'mbedtls',
   'library/debug.c',
   'library/net_sockets.c',
   'library/ssl_cache.c',
@@ -102,11 +113,10 @@ libmbedtls = library('mbedtls',
   'library/ssl_ticket.c',
   'library/ssl_tls.c',
   include_directories: incl,
-  dependencies: [mbedx509_dep, mbedcrypto_dep],
+  dependencies: [mbedx509_dep, mbedcrypto_dep, system_libs],
 )
 
 mbedtls_dep = declare_dependency(
-    link_with: [libmbedtls, libmbedx509, libmbedcrypto],
-    include_directories: incl,
+  link_with: [libmbedtls, libmbedx509, libmbedcrypto],
+  include_directories: incl,
 )
-

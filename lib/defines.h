@@ -50,7 +50,7 @@ static const char *DBG_LVL_LIST[] ={"NONE", "FAIL",     "ERROR",   "WARN",   "IN
 #if defined(__APPLE__) || defined(__MACH__)
   #define MIST_PROG getprogname()
 #else
-  #if defined(__GNUC__)
+  #if defined(__GNUC__) && !defined(_WIN32)
     #include <errno.h>
     #if defined(__CYGWIN__)
       #include <cstring>

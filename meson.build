@@ -2,7 +2,10 @@ project('mistserver', 'cpp', default_options: ['cpp_std=c++98'])
 add_project_arguments(['-funsigned-char', '-D_LARGEFILE_SOURCE','-Wno-sign-compare', '-Wparentheses', '-Wno-non-virtual-dtor', '-Wno-strict-aliasing'], language: 'cpp')
 
 # Ensures the "mist" directory is in the include path
-incroot = include_directories('.')
+incroot = [include_directories('.')]
+if host_machine.system() == 'windows'
+  incroot += include_directories('./win32-polyfills')
+endif
 
 # Sets the RELEASE, if not set externally
 release = get_option('RELEASE')
@@ -50,7 +53,7 @@ option_defines = [
     int_opt.format('UDP_API_PORT', get_option('UDP_API_PORT')),
 ]
 
-if not get_option('NOSHM') and host_machine.system() != 'darwin'
+if not get_option('NOSHM') and host_machine.system() != 'darwin' and host_machine.system() != 'windows'
   option_defines += '-DSHM_ENABLED=1'
 else
   message('Shared memory use is turned OFF')
@@ -145,7 +148,7 @@ if usessl
 
   usrsctp_dep = false
   if not get_option('NOUSRSCTP') and host_machine.system() != 'cygwin'
-    usrsctp_dep = dependency('usrsctp', fallback: ['usrsctp', 'usrsctp_dep'])
+    usrsctp_dep = dependency('usrsctp', fallback: ['usrsctp', 'usrsctp_dep'], default_options: ['sctp_build_programs=false'])
   endif
   have_usrsctp = not get_option('NOUSRSCTP') and host_machine.system() != 'cygwin' and usrsctp_dep.found()
   if have_usrsctp
@@ -181,7 +184,7 @@ endif
 mist_deps += dependency('threads')
 
 # Add rt dependency when using shared memory
-if not get_option('NOSHM') and host_machine.system() != 'darwin'
+if not get_option('NOSHM') and host_machine.system() != 'darwin' and host_machine.system() != 'windows'
   mist_deps += ccpp.find_library('rt', required : true)
 endif
 

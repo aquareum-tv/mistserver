@@ -8,6 +8,9 @@
 #include <sys/stat.h>
 #include <time.h>     //for time and nanosleep
 #include <stdlib.h>
+#ifdef _WIN32
+#include <win32.h>
+#endif
 
 // emulate clock_gettime() for OSX compatibility
 #if defined(__APPLE__) || defined(__MACH__)
